@@ -39,7 +39,7 @@ Or manually add it to your `composer.json`:
 Create a new instance of `DataObject`:
 
 ```php
-use DiePHP\DataObject\DataObject;
+use DiePHP\DataObject;
 
 $data = new DataObject([
     'name' => 'John Doe',
@@ -141,7 +141,7 @@ $clone = $data->clone();
 ### Example
 
 ```php
-use DiePHP\DataObject\DataObject;
+use DiePHP\DataObject;
 
 $data = new DataObject([
     'user' => [
