@@ -1,0 +1,24 @@
+{
+    "name": "diephp/data-object",
+    "description": "Simple object to be used as a DTO/MODEL/ValueObject.",
+    "keywords": [
+      "dataObject",
+      "DTO"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anatoly Astapov",
+            "email": "anatoly.astapov@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "DiePHP\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.4 || ^8.0"
+    }
+}
