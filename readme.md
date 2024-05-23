@@ -170,6 +170,3 @@ echo json_encode($data); // JSON representation
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-```
-
-This `README.md` provides a comprehensive guide to using the `DataObject` class, covering its main features, installation, basic usage, and examples. It should help users understand how to work with the class effectively.
