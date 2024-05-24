@@ -28,7 +28,7 @@ Or manually add it to your `composer.json`:
 
 ```json
 "require": {
-    "diephp/dataobject": "dev-master"
+    "diephp/dataobject": "^1.0.0"
 }
 ```
 
