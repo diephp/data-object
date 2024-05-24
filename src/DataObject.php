@@ -1,13 +1,20 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace DiePHP;
 
+use ArrayAccess;
+use ArrayObject;
+use Closure;
+use JsonSerializable;
+use LogicException;
+use ReturnTypeWillChange;
+
 /**
  * Class DataObject
- * This class represents a data object that can be initialized with an associative array and provides various methods to manipulate and access the data.
- * Implements \JsonSerializable and ArrayAccess interfaces.
+ * This class represents a data object that can be initialized with an associative array and provides various methods
+ * to manipulate and access the data. Implements \JsonSerializable and ArrayAccess interfaces.
  */
-class DataObject implements \JsonSerializable, \ArrayAccess
+class DataObject implements JsonSerializable, ArrayAccess
 {
 
     const STRICT        = true;
@@ -22,14 +29,15 @@ class DataObject implements \JsonSerializable, \ArrayAccess
 
     /**
      * Class constructor.
-     * @param array $assocArray Optional. An associative array to initialize the object. Default is an empty array.
+     * @param array|object|\DiePHP\DataObject|\ArrayAccess $assocArray Optional. An associative array to initialize the
+     *                                                                 object. Default is an empty array.
      */
     function __construct($assocArray = [])
     {
         $this->container = $this->convertToArray($assocArray);
 
         if ($this->container && (array_keys($this->container) === range(0, count($this->container) - 1))) {
-            throw new \LogicException("DataObject should be associative");
+            throw new LogicException("DataObject should be associative");
         }
     }
 
@@ -44,121 +52,13 @@ class DataObject implements \JsonSerializable, \ArrayAccess
             return $data->toArray();
         } else if (is_object($data) && method_exists($data, 'toArray')) {
             return $data->toArray();
-        } else if ($data instanceof \ArrayObject) {
+        } else if ($data instanceof ArrayObject) {
             return [...$data->getArrayCopy()];
+        } else if (is_null($data)) {
+            return [];
         }
 
         return (array) $data;
-    }
-
-    /**
-     * Create a new instance of the class based on an associative array.
-     * @param array $assocArray The associative array to initialize the class with.
-     * @return self Returns a new instance of the class.
-     */
-    public static function of($assocArray) : self
-    {
-        return new static($assocArray);
-    }
-
-    /**
-     * @param $key
-     * @return bool|float|int|mixed|string|null
-     */
-    public function __get($key)
-    {
-        return $this->get($key);
-    }
-
-    /**
-     * @param $key
-     * @param $value
-     * @return void
-     */
-    public function __set($key, $value)
-    {
-        $this->set($key, $value);
-    }
-
-
-    /**
-     * @param $key
-     * @return bool
-     */
-    public function __isset($key)
-    {
-        return $this->has($key);
-    }
-
-    /**
-     * @param $key
-     * @return void
-     */
-    public function __unset($key)
-    {
-        $this->remove($key);
-    }
-
-    /**
-     * @param $offset
-     * @param $value
-     * @return void
-     */
-    public function offsetSet($offset, $value)
-    {
-        $this->set($offset, $value);
-    }
-
-    /**
-     * @param $offset
-     * @return bool
-     */
-    public function offsetExists($offset) : bool
-    {
-        return $this->has($offset);
-    }
-
-    /**
-     * @param $offset
-     * @return void
-     */
-    public function offsetUnset($offset)
-    {
-        $this->remove($offset);
-    }
-
-    /**
-     * @param $offset
-     * @return bool|float|int|mixed|string|null
-     */
-    public function offsetGet($offset)
-    {
-        return $this->get($offset, null, self::STRICT);
-    }
-
-    /**
-     * @return array
-     */
-    public function jsonSerialize() : array
-    {
-        return $this->toArray();
-    }
-
-    /**
-     * @return array
-     */
-    public function __debugInfo()
-    {
-        return $this->toArray();
-    }
-
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return json_encode($this->toArray());
     }
 
     /**
@@ -183,74 +83,30 @@ class DataObject implements \JsonSerializable, \ArrayAccess
         return $result;
     }
 
-
     /**
-     * Sets a value in the container using a given key.
-     * @param string $key   The key to set the value for.
-     * @param mixed  $value The value to set for the key.
-     * @return self Returns an instance of the current class.
+     * @param string|int $key
+     * @return bool|float|int|mixed|string|null
      */
-    private function set($key, $value) : self
+    public function __get($key)
     {
-        if (false !== (strpos($key, "."))) {
-            $ref =& $this->container;
-            $skipUpdate = false;
-            $deep = explode('.', $key);
-            foreach ($deep as $_k => $vv) {
-                isset($ref[$vv]) or $ref[$vv] = [];
-                if ($ref instanceof self) {
-                    $ref->set(implode('.', array_slice($deep, $_k)), $value);
-                    $skipUpdate = true;
-                } else {
-                    $ref =& $ref[$vv];
-                }
-            }
-
-            if (!$skipUpdate) {
-                $ref = $value;
-            }
-
-            return $this;
-        }
-
-        $this->container[$key] = $value;
-
-        return $this;
+        return $this->get($key);
     }
 
     /**
-     * Checks if the given key exists in the container.
-     * @param string $key The key to check for existence.
-     * @return bool Returns true if the key exists, false otherwise.
+     * @param $key
+     * @param $value
+     * @return void
      */
-    public function has($key) : bool
+    public function __set($key, $value)
     {
-        if (!$key && !strlen($key)) {
-            return false;
-        }
-
-        if (array_key_exists($key, $this->container)) {
-            return true;
-        }
-
-        $result = false;
-        $array = $this->container;
-        foreach (explode('.', $key) as $key_part) {
-            $result = array_key_exists($key_part, $array);
-            if (!$result) {
-                break;
-            }
-            $array = $array[$key_part];
-        }
-
-        return $result;
+        $this->set($key, $value);
     }
 
     /**
      * Retrieves a value from the container using dot notation.
-     * @param string $key     The key to retrieve the value for in dot notation.
-     * @param mixed  $default The default value to return if the key is not found (default: null).
-     * @param bool   $mode    The retrieval mode to use: strict or soft (default: strict).
+     * @param string|int $key     The key to retrieve the value for in dot notation.
+     * @param mixed      $default The default value to return if the key is not found (default: null).
+     * @param bool       $mode    The retrieval mode to use: strict or soft (default: strict).
      * @return mixed The retrieved value or the default value if the key is not found.
      */
     public function get($key, $default = null, bool $mode = self::STRICT)
@@ -281,8 +137,196 @@ class DataObject implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * Sets a value in the container using a given key.
+     * @param string|int $key   The key to set the value for.
+     * @param mixed      $value The value to set for the key.
+     * @return self Returns an instance of the current class.
+     */
+    public function set($key, $value) : self
+    {
+        if (false !== (strpos($key, "."))) {
+            $ref =& $this->container;
+            $skipUpdate = false;
+            $deep = explode('.', $key);
+            foreach ($deep as $_k => $vv) {
+                isset($ref[$vv]) or $ref[$vv] = [];
+                if ($ref instanceof self) {
+                    $ref->set(implode('.', array_slice($deep, $_k)), $value);
+                    $skipUpdate = true;
+                } else {
+                    $ref =& $ref[$vv];
+                }
+            }
+
+            if (!$skipUpdate) {
+                $ref = $value;
+            }
+
+            return $this;
+        }
+
+        $this->container[$key] = $value;
+
+        return $this;
+    }
+
+    /**
+     * @param $key
+     * @return bool
+     */
+    public function __isset($key)
+    {
+        return $this->has($key);
+    }
+
+    /**
+     * Checks if the given key exists in the container.
+     * @param string|int $key The key to check for existence.
+     * @return bool Returns true if the key exists, false otherwise.
+     */
+    public function has($key) : bool
+    {
+        if (!$key && !strlen($key)) {
+            return false;
+        }
+
+        if (array_key_exists($key, $this->container)) {
+            return true;
+        }
+
+        $result = false;
+        $array = $this->container;
+        foreach (explode('.', $key) as $key_part) {
+            $result = array_key_exists($key_part, $array);
+            if (!$result) {
+                break;
+            }
+            $array = $array[$key_part];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param $key
+     * @return void
+     */
+    public function __unset($key)
+    {
+        $this->remove($key);
+    }
+
+    /**
+     * Removes a value from the container.
+     * @param string|array|int $keys The key of the value to remove.
+     * @return self
+     */
+    public function remove($keys) : self
+    {
+        $original = &$this->container;
+
+        $keys = (array) $keys;
+
+        if (count($keys) === 0) {
+            return $this;
+        }
+
+        foreach ($keys as $key) {
+            // if the exact key exists in the top-level, remove it
+            if (array_key_exists($key, $this->container)) {
+                unset($this->container[$key]);
+
+                continue;
+            }
+
+            $parts = explode('.', $key);
+
+            $this->container = &$original;
+
+            while (count($parts) > 1) {
+                $part = array_shift($parts);
+
+                if (isset($this->container[$part]) && is_array($this->container[$part])) {
+                    $this->container = &$this->container[$part];
+                } else {
+                    continue 2;
+                }
+            }
+
+            unset($this->container[array_shift($parts)]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $offset
+     * @param $value
+     * @return void
+     */
+    #[ReturnTypeWillChange]
+    public function offsetSet($offset, $value)
+    {
+        $this->set($offset, $value);
+    }
+
+    /**
+     * @param $offset
+     * @return bool
+     */
+    #[ReturnTypeWillChange]
+    public function offsetExists($offset) : bool
+    {
+        return $this->has($offset);
+    }
+
+    /**
+     * @param $offset
+     * @return void
+     */
+    #[ReturnTypeWillChange]
+    public function offsetUnset($offset)
+    {
+        $this->remove($offset);
+    }
+
+    /**
+     * @param $offset
+     * @return bool|float|int|mixed|string|null
+     */
+    #[ReturnTypeWillChange]
+    public function offsetGet($offset)
+    {
+        return $this->get($offset, null, self::STRICT);
+    }
+
+    /**
+     * @return array
+     */
+    public function jsonSerialize() : array
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * @return array
+     */
+    public function __debugInfo()
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return json_encode($this->toArray());
+    }
+
+    /**
      * Merge the given data into the object.
-     * @param array $data The data to be merged (optional, default empty array).
+     * @param array|object|\DiePHP\DataObject $data The data to be merged (optional, default empty array).
      * @return self The current object after merging the data.
      */
     public function merge($data = []) : self
@@ -303,12 +347,31 @@ class DataObject implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * @param array $array
+     * @param       $prefix
+     * @return array
+     */
+    private function _flatten(array $array, $prefix) : array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $result = array_replace($result, $this->_flatten($value, $prefix.$key.'.'));
+            } else {
+                $result[$prefix.$key] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Returns the first non-null value from the specified keys or the default value if none of the keys have a
      * non-null value.
      * @param array $keys    An array of keys to check.
      * @param mixed $default The default value to return if none of the keys have a non-null value. Defaults to null.
      * @return mixed The first non-null value from the specified keys or the default value if none of the keys have a
-     *               non-null value.
+     *                       non-null value.
      */
     public function either(array $keys, $default = null)
     {
@@ -323,8 +386,8 @@ class DataObject implements \JsonSerializable, \ArrayAccess
 
     /**
      * Find the key associated with a given value or function.
-     * @param mixed $valueOrFunction The value to be searched for or a callback function.
-     * @return mixed|null The key associated with the value, or null if the value is not found.
+     * @param mixed | callable $valueOrFunction The value to be searched for or a callback function.
+     * @return int|string|null The key associated with the value, or null if the value is not found.
      */
     public function findKey($valueOrFunction)
     {
@@ -366,7 +429,7 @@ class DataObject implements \JsonSerializable, \ArrayAccess
                 $newValue = call_user_func_array($function, $mode === self::MAP_USE_BOTH ? [$value, $key] : [$value]);
             } else if (is_array($keys) && in_array($key, $keys)) {
                 $newValue = call_user_func_array($function, $mode === self::MAP_USE_BOTH ? [$value, $key] : [$value]);
-            } else if (is_string($keys) && preg_match('/'.$keys.'/i', $key)) {
+            } else if (is_string($keys) && preg_match('/'.$keys.'/i', (string) $key)) {
                 $newValue = call_user_func_array($function, $mode === self::MAP_USE_BOTH ? [$value, $key] : [$value]);
             } else {
                 $newValue = $value;
@@ -378,6 +441,16 @@ class DataObject implements \JsonSerializable, \ArrayAccess
         return $newObject;
     }
 
+    /**
+     * Create a new instance of the class based on an associative array.
+     * @param array|object|\DiePHP\DataObject|\ArrayAccess $assocArray The associative array to initialize the class
+     *                                                                 with.
+     * @return self Returns a new instance of the class.
+     */
+    public static function of($assocArray) : self
+    {
+        return new static($assocArray);
+    }
 
     /**
      * Calculates and returns the MD5 hash of the string representation of the object.
@@ -409,7 +482,7 @@ class DataObject implements \JsonSerializable, \ArrayAccess
                 $removeKey = call_user_func_array($function, [$value, $key, $this]);
             } else {
                 if ($value instanceof self) {
-                    $value->filter();
+                    $value->filter($function);
                 } else {
                     $removeKey = !empty($value);
                 }
@@ -433,52 +506,22 @@ class DataObject implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * Returns the number of elements in the container.
+     * @return int The number of elements in the container.
+     */
+    public function count() : int
+    {
+        return count($this->container);
+    }
+
+    /**
      * Flatten the container.
-     * @param string $prefix The prefix to be added to the flattened keys.
+     * @param string|null $prefix The prefix to be added to the flattened keys.
      * @return self
      */
-    public function flatten($prefix = '') : self
+    public function flatten(?string $prefix = '') : self
     {
-        $this->container = $this->_flatten($this->container, $prefix);
-
-        return $this;
-    }
-
-    /**
-     * @param array $array
-     * @param       $prefix
-     * @return array
-     */
-    private function _flatten(array $array, $prefix) : array
-    {
-        $result = [];
-        foreach ($array as $key => $value) {
-            if (is_array($value)) {
-                $result = array_replace($result, $this->_flatten(
-                    $value, $prefix.$key.'.'
-                ));
-            } else {
-                $result[$prefix.$key] = $value;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Removes a value from the container.
-     * @param string $key The key of the value to remove.
-     * @return self
-     */
-    public function remove($key) : self
-    {
-        if (false !== (strpos($key, "."))) {
-            $this->set($key, null)->filter();
-        } else {
-            unset($this->container[$key]);
-        }
-
-        return $this;
+        return static::of($this->_flatten($this->toArray(), $prefix));
     }
 
     /**
@@ -497,7 +540,7 @@ class DataObject implements \JsonSerializable, \ArrayAccess
 
         if (is_object($callableData) && method_exists($callableData, 'transform')) {
             $this->container = $callableData->transform($this->toArray());
-        } else if ($callableData instanceof \Closure) {
+        } else if ($callableData instanceof Closure) {
             $this->container = $callableData($this->toArray());
         } else if (
             is_array($callableData) && method_exists($callableData[0], $callableData[1])
@@ -520,24 +563,6 @@ class DataObject implements \JsonSerializable, \ArrayAccess
     }
 
     /**
-     * Returns the number of elements in the container.
-     * @return int The number of elements in the container.
-     */
-    public function count() : int
-    {
-        return count($this->container);
-    }
-
-    /**
-     * Retrieves the values from the container.
-     * @return array The values from the container.
-     */
-    public function getValues() : array
-    {
-        return array_values($this->container);
-    }
-
-    /**
      * Retrieves all the keys from the container
      * @return array An array of keys
      */
@@ -555,7 +580,6 @@ class DataObject implements \JsonSerializable, \ArrayAccess
     {
         $this->container = $data;
     }
-
 
     /**
      * Collapse the values in the current instance.
@@ -575,6 +599,15 @@ class DataObject implements \JsonSerializable, \ArrayAccess
         }
 
         return static::of($container);
+    }
+
+    /**
+     * Retrieves the values from the container.
+     * @return array The values from the container.
+     */
+    public function getValues() : array
+    {
+        return array_values($this->container);
     }
 
     /**

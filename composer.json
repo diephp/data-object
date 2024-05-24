@@ -13,12 +13,23 @@
             "email": "anatoly.astapov@gmail.com"
         }
     ],
+    "require": {
+        "php": "^7.4 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9"
+    },
     "autoload": {
         "psr-4": {
             "DiePHP\\": "src/"
         }
     },
-    "require": {
-        "php": "^7.4 || ^8.0"
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "./vendor/bin/phpunit"
     }
 }
