@@ -7,7 +7,6 @@ use ArrayObject;
 use Closure;
 use JsonSerializable;
 use LogicException;
-use ReturnTypeWillChange;
 
 /**
  * Class DataObject
@@ -264,7 +263,7 @@ class DataObject implements JsonSerializable, ArrayAccess
      * @param $value
      * @return void
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->set($offset, $value);
@@ -274,7 +273,7 @@ class DataObject implements JsonSerializable, ArrayAccess
      * @param $offset
      * @return bool
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset) : bool
     {
         return $this->has($offset);
@@ -284,7 +283,7 @@ class DataObject implements JsonSerializable, ArrayAccess
      * @param $offset
      * @return void
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         $this->remove($offset);
@@ -294,7 +293,7 @@ class DataObject implements JsonSerializable, ArrayAccess
      * @param $offset
      * @return bool|float|int|mixed|string|null
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->get($offset, null, self::STRICT);
